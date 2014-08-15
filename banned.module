@@ -1,0 +1,131 @@
+<?php
+// $Id$
+
+/**
+ * @Implement of hook_menu()
+ */
+function banned_menu() {
+  $items = array();
+
+  $items['admin/banned'] = array(
+    'title' => 'IP 和帐号屏蔽列表',
+    'access_arguments' => array('banned view'),
+    'page_callback' => 'banned_admin_list',
+    'file' => 'banned.admin.inc',
+  );
+
+  $items['admin/banned/add'] = array(
+    'title' => '新增屏蔽',
+    'access_arguments' => array('banned add'),
+    'page_callback' => 'dd_get_form',
+    'page_arguments' => array('banned_admin_add'),
+    'file' => 'banned.admin.inc',
+  );
+
+  $items['admin/banned/delete/%'] = array(
+    'title' => '取消屏蔽',
+    'load_functions' => array(3 => '%0-9'),
+    'access_arguments' => array('banned delete'),
+    'page_callback' => 'dd_get_form',
+    'page_arguments' => array('banned_admin_delete', 3),
+    'file' => 'banned.admin.inc',
+  );
+
+  return $items;
+}
+
+/**
+ * @Implement of hook_perm()
+ */
+function banned_perm() {
+  return array(
+    'banned view' => t('banned', '浏览屏蔽列表'),
+    'banned delete' => t('banned', '取消屏蔽'),
+    'banned add' => t('banned', '加入屏蔽'),
+  );
+}
+
+/**
+ * @Implement of hook_system_admin_menus()
+ */
+function banned_system_admin_menus() {
+  return array(array(
+    array(t('banned', '屏蔽列表'), 'admin/banned'),
+    array(t('banned', '新增屏蔽'), 'admin/banned/add'),
+  ), t('banned', '屏蔽'));
+}
+
+// public banned_get_list() {{{ 
+/**
+ * banned_get_list
+ *  获取屏蔽列表
+ * 
+ * @access public
+ * @return void
+ */
+function banned_get_list() {
+  if (!$cache = cache_get('banned_list')) {
+    return $cache->data;
+  } else if ($fetch = db_query('SELECT account, type, format FROM {banned_info} WHERE expired > ?', array(time()))) {
+    $data = array(1 => array(), 2 => array());
+    foreach ($fetch as $o) {
+      $data[$o->type][$o->account] = $o->format;
+    }
+    cache_set('banned_list', $data, 'cache', 3600);
+    return $data;
+  }
+}
+// }}}
+
+/**
+ * @Implement of hook_init()
+ */
+function banned_init() {
+  global $user;
+
+  if ($data = banned_get_list()) {
+    if (!empty($user->uid) && !empty($data[2])) {
+      foreach ($data[2] as $uid => $format) {
+        if ($user->uid == $uid) {
+          header('Content-type: text/html; charset=utf-8');
+          echo t('banned', '你的帐号处于屏蔽状态，请联系管理员 !mail', array('!mail' => var_get_key('site_global', 'mail')));
+          exit;
+        }
+      }
+    }
+    
+    if (!empty($data[1])) {
+      $ip = ip_address();
+      $message = t('banned', '你的 IP 处于屏蔽状态，请联系管理员 !mail', array('!mail' => var_get_key('site_global', 'mail')));
+      foreach ($data[1] as $host => $format) {
+        switch ($format) {
+          case 0:
+            // 普通模式
+            if ($ip == $host) {
+              header('Content-type: text/html; charset=utf-8');
+              echo $message;
+              exit;
+            }
+          break;
+          case 1:
+            // 通配符模式，如：127.*.129
+		        if (preg_match('/' . str_replace(array('.', '*'), array('\.', '.*?'), $host) . '$/ims', $ip)) {
+              header('Content-type: text/html; charset=utf-8');
+              echo $message;
+              exit;
+            }
+          break;
+          case 2:
+            // 正则模式
+		        if (preg_match($host, $ip)) {
+              header('Content-type: text/html; charset=utf-8');
+              echo $message;
+              exit;
+            }
+          break;
+        }
+      }
+    }
+  }
+}
+

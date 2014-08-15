@@ -1,0 +1,9 @@
+<?php
+// $Id$
+
+$info = array(
+  'name' => '屏蔽',
+  'description' => '提供基于 IP 的屏蔽功能，并扩展帐号屏蔽功能',
+  'ver' => '1.0',
+  'language' => 'zh-hans',
+);

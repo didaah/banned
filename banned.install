@@ -1,0 +1,115 @@
+<?php
+// $Id$
+
+/**
+ * @Implement of hook_schema()
+ */
+function banned_schema() {
+  $schema['banned_info'] = array(
+    'description' => '屏蔽 ip 和帐号列表',
+    'fields' => array(
+      'id' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'account' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '待屏蔽的帐户或 ip',
+      ),
+      'description' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '屏蔽说明',
+      ),
+      'free_description' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => '取消屏蔽说明',
+      ),
+      'type' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '屏蔽类型：1：IP，2、帐号',
+      ),     
+      'format' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '匹配模式：0、普通，1、通配符，2、正则',
+      ),     
+      'created' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '开始时间',
+      ),
+      'expired' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '结束时间',
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '操作人',
+      ),
+      'free_timestamp' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '移除时间',
+      ),
+      'free_uid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => '移除操作人',
+      ),
+    ),
+    'indexes' => array(
+      'expired' => array('expired'),
+      'te' => array('type', 'expired'),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
+
+/**
+ * @Implement of hook_install()
+ */
+function banned_install() {
+  return module_install_schema('install', 'banned');
+}
+
+/**
+ * @Implement of hook_uninstall()
+ */
+function banned_uninstall() {
+  $ret = array();
+  $ret = module_install_schema('uninstall', 'banned');
+  
+  db_exec('DELETE FROM {variable} WHERE name LIKE ?', array('banned_%'));
+  var_init();
+  
+  return $ret;
+}
