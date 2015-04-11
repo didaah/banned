@@ -181,7 +181,7 @@ function banned_admin_add_submit(&$form, &$v) {
   $v['_dida_values']->created = time();
   if (db_write_record('banned_info', $v['_dida_values'])) {
     dd_set_message(t('message', '屏蔽成功'));
-    cache_del('banned_list');
+    cache_del('cid', 'banned_list');
   } else {
     dd_set_message(t('message', '屏蔽失败'));
   }

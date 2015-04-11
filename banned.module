@@ -84,6 +84,7 @@ function banned_init() {
   global $user;
 
   if ($data = banned_get_list()) {
+    print_r($data);
     if (!empty($user->uid) && !empty($data[2])) {
       foreach ($data[2] as $uid => $format) {
         if ($user->uid == $uid) {
