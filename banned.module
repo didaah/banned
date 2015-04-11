@@ -64,7 +64,7 @@ function banned_system_admin_menus() {
  * @return void
  */
 function banned_get_list() {
-  if (!$cache = cache_get('banned_list')) {
+  if ($cache = cache_get('banned_list')) {
     return $cache->data;
   } else if ($fetch = db_query('SELECT account, type, format FROM {banned_info} WHERE expired > ?', array(time()))) {
     $data = array(1 => array(), 2 => array());
@@ -84,10 +84,9 @@ function banned_init() {
   global $user;
 
   if ($data = banned_get_list()) {
-    print_r($data);
     if (!empty($user->uid) && !empty($data[2])) {
-      foreach ($data[2] as $uid => $format) {
-        if ($user->uid == $uid) {
+      foreach ($data[2] as $name => $format) {
+        if ($user->name == $name) {
           header('Content-type: text/html; charset=utf-8');
           echo t('banned', '你的帐号处于屏蔽状态，请联系管理员 !mail', array('!mail' => var_get_key('site_global', 'mail')));
           exit;
